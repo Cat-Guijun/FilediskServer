@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/userpc_server.dir/use_rpcserver.cc.o CMakeFiles/userpc_server.dir/UserSign.pb.cc.o  -o userpc_server  -lsrpc -lprotobuf -lworkflow -lcrypto -lwfrest -llz4 -lsnappy 

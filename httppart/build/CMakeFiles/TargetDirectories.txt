@@ -1,0 +1,5 @@
+/home/guijunliu/xiangmu/FilediskServer/httppart/build/CMakeFiles/rebuild_cache.dir
+/home/guijunliu/xiangmu/FilediskServer/httppart/build/CMakeFiles/edit_cache.dir
+/home/guijunliu/xiangmu/FilediskServer/httppart/build/CMakeFiles/filerpc_server.dir
+/home/guijunliu/xiangmu/FilediskServer/httppart/build/CMakeFiles/userpc_server.dir
+/home/guijunliu/xiangmu/FilediskServer/httppart/build/CMakeFiles/apiserver.dir

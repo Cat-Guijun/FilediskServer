@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/apiserver.dir/ApiServer.cc.o CMakeFiles/apiserver.dir/UserSign.pb.cc.o CMakeFiles/apiserver.dir/FileManager.pb.cc.o  -o apiserver  -lsrpc -lprotobuf -lworkflow -lcrypto -lwfrest -llz4 -lsnappy 

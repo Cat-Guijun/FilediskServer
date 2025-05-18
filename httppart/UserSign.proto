@@ -1,0 +1,20 @@
+syntax="proto3";
+message UserSign{
+    string username=1;
+    string password=2;
+    string uuid=3;
+}
+
+message UserRet{
+    int32 code=1;
+    string msg=2;
+    string uuid=3;  
+}
+
+service UserSignUpService{
+    rpc SignUp(UserSign) returns (UserRet);
+}
+
+service UserSignInService{
+    rpc SignIn(UserSign) returns (UserRet);
+}

@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+message DirInfo{
+    int64 dirid=1;
+    string name=2;
+    string uuid=3;
+}
+
+message DirRet{
+    int32 code=1;
+    string jsoninfo=2;
+}
+
+service DirAddService{
+    rpc DirAdd(DirInfo) returns (DirRet);
+}
+
+service DirRmService{
+    rpc DirRm(DirInfo) returns (DirRet);
+}
+
+service DirQueryService{
+    rpc DirQuery(DirInfo) returns (DirRet);
+}
+

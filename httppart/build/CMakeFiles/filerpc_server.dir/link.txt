@@ -1,0 +1,1 @@
+/usr/bin/c++     CMakeFiles/filerpc_server.dir/dirinfoserver.cc.o CMakeFiles/filerpc_server.dir/FileManager.pb.cc.o  -o filerpc_server  -lsrpc -lprotobuf -lworkflow -lcrypt -lwfrest -llz4 -lsnappy 
