@@ -1,35 +1,14 @@
-name: 国产AI代码助手
+name: AI指令助手
 on:
   issue_comment:
     types: [created]
 
 jobs:
-  ai-code-assist:
+  run-command:
     if: contains(github.event.comment.body, '@claude')
     runs-on: ubuntu-latest
     permissions:
       issues: write
     steps:
-      - uses: actions/checkout@v4
-
-      - name: AI自动回复
-        env:
-          BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
-          API_KEY: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
-          MODEL: astron-code-latest
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE_NUM: ${{ github.event.issue.number }}
-          REPO: ${{ github.repository }}
-          PROMPT: ${{ github.event.comment.body }}
-        run: |
-          pip install requests
-          python -c "
-import os, requests
-res = requests.post('${{ secrets.ANTHROPIC_BASE_URL }}/chat/completions',
-  headers={'Authorization':'Bearer ${{ secrets.ANTHROPIC_AUTH_TOKEN }}'},
-  json={'model':'astron-code-latest','messages':[{'role':'user','content':'${{ github.event.comment.body }}'}]})
-reply = res.json()['choices'][0]['message']['content']
-requests.post(f'https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments',
-  headers={'Authorization':'token ${{ secrets.GITHUB_TOKEN }}'},
-  json={'body':'🤖 AI回复：\n'+reply})
-"
+      - name: 执行AI指令
+        run: echo "✅ 已收到 @claude 指令，正在处理..."
