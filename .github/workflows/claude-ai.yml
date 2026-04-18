@@ -48,7 +48,7 @@ jobs:
               ]
             }')
 
-          RESPONSE=$(curl -s "$API_HOST/messages" \
+          RESPONSE=$(curl -s "$API_HOST/v1/messages" \
             -H "x-api-key: $API_KEY" \
             -H "anthropic-version: 2023-06-01" \
             -H "content-type: application/json" \
