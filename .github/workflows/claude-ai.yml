@@ -1,4 +1,4 @@
-name: AI自动回复助手
+name: AI自动修改仓库助手
 
 on:
   issue_comment:
@@ -12,34 +12,48 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
+      contents: write
       issues: write
 
     steps:
 
+      - name: checkout 仓库
+        uses: actions/checkout@v4
+
       - name: 安装 jq
         run: sudo apt-get update && sudo apt-get install -y jq
 
-      - name: 调用 astron-code Claude API
+      - name: 读取 README
+        id: readme
+        run: |
+          if [ -f README.md ]; then
+            cat README.md > readme.txt
+          else
+            echo "" > readme.txt
+          fi
+
+      - name: 调用 astron-code 修改 README
         env:
           API_KEY: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           API_HOST: ${{ secrets.ANTHROPIC_BASE_URL }}
           MODEL: astron-code-latest
-
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ISSUE: ${{ github.event.issue.number }}
-          REPO: ${{ github.repository }}
           CONTENT: ${{ github.event.comment.body }}
 
         run: |
 
-          echo "调用讯飞 astron-code..."
+          README_CONTENT=$(cat readme.txt)
+
+          PROMPT="用户请求：$CONTENT
+          当前 README：
+          $README_CONTENT
+          请输出修改后的完整 README 内容，仅输出 markdown。"
 
           REQUEST=$(jq -n \
             --arg model "$MODEL" \
-            --arg content "$CONTENT" \
+            --arg content "$PROMPT" \
             '{
               model: $model,
-              max_tokens: 1024,
+              max_tokens: 4096,
               messages: [
                 {
                   role: "user",
@@ -54,21 +68,29 @@ jobs:
             -H "content-type: application/json" \
             -d "$REQUEST")
 
-          echo "原始返回："
-          echo "$RESPONSE"
+          NEW_README=$(echo "$RESPONSE" | jq -r '.content[0].text')
 
-          AI_RESPONSE=$(echo "$RESPONSE" | jq -r '.content[0].text')
+          echo "$NEW_README" > README.md
 
-          if [ "$AI_RESPONSE" = "null" ] || [ -z "$AI_RESPONSE" ]; then
-            AI_RESPONSE="⚠️ AI接口调用失败，请检查 API_KEY 或套餐状态"
-          fi
+      - name: commit 修改
+        run: |
+          git config user.name "ai-bot"
+          git config user.email "ai-bot@example.com"
 
-          COMMENT_BODY=$(jq -n \
-            --arg body "🤖 AI助手回复：\n\n$AI_RESPONSE" \
-            '{body: $body}')
+          git add README.md
+          git commit -m "AI 自动更新 README"
+          git push
+
+      - name: 回复 Issue 评论
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+
+        run: |
 
           curl -s -X POST \
             "https://api.github.com/repos/$REPO/issues/$ISSUE/comments" \
             -H "Authorization: token $TOKEN" \
             -H "Content-Type: application/json" \
-            -d "$COMMENT_BODY"
+            -d '{"body":"✅ README 已自动更新"}'
