@@ -24,7 +24,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq
 
       - name: 读取 README
-        id: readme
         run: |
           if [ -f README.md ]; then
             cat README.md > readme.txt
@@ -41,19 +40,21 @@ jobs:
 
         run: |
 
+          echo "开始调用 astron-code..."
+
           README_CONTENT=$(cat readme.txt)
 
           PROMPT="用户请求：$CONTENT
-          当前 README：
+            当前 README 内容如下：
           $README_CONTENT
-          请输出修改后的完整 README 内容，仅输出 markdown。"
+          请输出修改后的完整 README.md 内容（仅输出 markdown，不要解释）。"
 
           REQUEST=$(jq -n \
             --arg model "$MODEL" \
             --arg content "$PROMPT" \
             '{
               model: $model,
-              max_tokens: 4096,
+              max_tokens: 8192,
               messages: [
                 {
                   role: "user",
@@ -68,16 +69,41 @@ jobs:
             -H "content-type: application/json" \
             -d "$REQUEST")
 
-          NEW_README=$(echo "$RESPONSE" | jq -r '.content[0].text')
+          echo "接口原始返回："
+          echo "$RESPONSE"
+
+          NEW_README=$(echo "$RESPONSE" | jq -r '
+            if .content then
+              .content[0].text
+            elif .data.content then
+              .data.content[0].text
+            else
+              empty
+            end
+          ')
+
+          if [ -z "$NEW_README" ]; then
+            echo "AI返回为空，终止更新"
+            exit 1
+          fi
+
+          echo "准备更新 README..."
 
           echo "$NEW_README" > README.md
 
-      - name: commit 修改
+      - name: commit 修改 README
         run: |
+
           git config user.name "ai-bot"
           git config user.email "ai-bot@example.com"
 
           git add README.md
+
+          if git diff --cached --quiet; then
+            echo "README 没变化，跳过提交"
+            exit 0
+          fi
+
           git commit -m "AI 自动更新 README"
           git push
 
