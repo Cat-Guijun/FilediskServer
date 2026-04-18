@@ -1,74 +1,35 @@
-name: 国产AI代码助手（无需GitHub App）
+name: 国产AI代码助手
 on:
   issue_comment:
     types: [created]
-  pull_request:
-    types: [opened, synchronize]
 
 jobs:
   ai-code-assist:
     if: contains(github.event.comment.body, '@claude')
     runs-on: ubuntu-latest
     permissions:
-      contents: write
-      pull-requests: write
       issues: write
-      
     steps:
       - uses: actions/checkout@v4
 
-      - name: 调用国产AI处理指令
+      - name: AI自动回复
         env:
-          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
-          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
-          ANTHROPIC_MODEL: astron-code-latest
+          BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          API_KEY: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          MODEL: astron-code-latest
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COMMENT_BODY: ${{ github.event.comment.body }}
-          ISSUE_NUMBER: ${{ github.event.issue.number || github.event.pull_request.number }}
+          ISSUE_NUM: ${{ github.event.issue.number }}
           REPO: ${{ github.repository }}
-          
+          PROMPT: ${{ github.event.comment.body }}
         run: |
-          # 安装必要依赖
           pip install requests
-
-          # AI处理脚本（直接调用兼容Anthropic格式的国产API）
-          python - << 'EOF'
-import os
-import requests
-import json
-
-# 读取配置
-api_key = os.getenv("ANTHROPIC_AUTH_TOKEN")
-base_url = os.getenv("ANTHROPIC_BASE_URL")
-model = os.getenv("ANTHROPIC_MODEL")
-github_token = os.getenv("GITHUB_TOKEN")
-prompt = os.getenv("COMMENT_BODY")
-issue_num = os.getenv("ISSUE_NUMBER")
-repo = os.getenv("REPO")
-
-# 调用国产AI接口（兼容Anthropic格式）
-headers = {
-    "Authorization": f"Bearer {api_key}",
-    "Content-Type": "application/json"
-}
-data = {
-    "model": model,
-    "messages": [{"role": "user", "content": prompt}],
-    "max_tokens": 4096
-}
-
-# 发送请求
-response = requests.post(f"{base_url}/chat/completions", headers=headers, json=data)
-response.raise_for_status()  # 处理HTTP错误
-ai_reply = response.json()["choices"][0]["message"]["content"]
-
-# 自动回复到Issue/PR
-comment_url = f"https://api.github.com/repos/{repo}/issues/{issue_num}/comments"
-requests.post(
-    comment_url,
-    headers={"Authorization": f"token {github_token}"},
-    json={"body": f"## 🤖 AI 助手回复\n{ai_reply}"}
-)
-EOF
-
-          echo "AI 处理完成，已自动回复评论"
+          python -c "
+import os, requests
+res = requests.post('${{ secrets.ANTHROPIC_BASE_URL }}/chat/completions',
+  headers={'Authorization':'Bearer ${{ secrets.ANTHROPIC_AUTH_TOKEN }}'},
+  json={'model':'astron-code-latest','messages':[{'role':'user','content':'${{ github.event.comment.body }}'}]})
+reply = res.json()['choices'][0]['message']['content']
+requests.post(f'https://api.github.com/repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments',
+  headers={'Authorization':'token ${{ secrets.GITHUB_TOKEN }}'},
+  json={'body':'🤖 AI回复：\n'+reply})
+"
