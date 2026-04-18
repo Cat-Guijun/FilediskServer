@@ -1,14 +1,74 @@
-name: AI指令助手
+name: AI自动回复助手
+
 on:
   issue_comment:
     types: [created]
 
 jobs:
-  run-command:
+  ai_reply:
+
+    # 评论包含 @claude 才触发
     if: contains(github.event.comment.body, '@claude')
+
     runs-on: ubuntu-latest
+
     permissions:
       issues: write
+
     steps:
-      - name: 执行AI指令
-        run: echo "✅ 已收到 @claude 指令，正在处理..."
+
+      - name: 安装 jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
+      - name: 调用 astron-code (Claude API 风格)
+        env:
+          API_KEY: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          API_HOST: ${{ secrets.ANTHROPIC_BASE_URL }}
+          MODEL: astron-code-latest
+
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          REPO: ${{ github.repository }}
+          CONTENT: ${{ github.event.comment.body }}
+
+        run: |
+
+          echo "调用 astron-code Claude API..."
+
+          REQUEST=$(jq -n \
+            --arg model "$MODEL" \
+            --arg content "$CONTENT" \
+            '{
+              model: $model,
+              max_tokens: 1024,
+              messages: [
+                {
+                  role: "user",
+                  content: $content
+                }
+              ]
+            }')
+
+          RESPONSE=$(curl -s "$API_HOST/v1/messages" \
+            -H "x-api-key: $API_KEY" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "content-type: application/json" \
+            -d "$REQUEST")
+
+          AI_RESPONSE=$(echo "$RESPONSE" | jq -r '.content[0].text')
+
+          if [ "$AI_RESPONSE" = "null" ] || [ -z "$AI_RESPONSE" ]; then
+            echo "接口返回异常:"
+            echo "$RESPONSE"
+            AI_RESPONSE="⚠️ AI接口调用失败，请检查 API_HOST / API_KEY"
+          fi
+
+          COMMENT_BODY=$(jq -n \
+            --arg body "🤖 AI助手回复：\n\n$AI_RESPONSE" \
+            '{body: $body}')
+
+          curl -s -X POST \
+            "https://api.github.com/repos/$REPO/issues/$ISSUE/comments" \
+            -H "Authorization: token $TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "$COMMENT_BODY"
