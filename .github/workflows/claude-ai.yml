@@ -1,0 +1,30 @@
+name: 国产AI代码助手（无需GitHub App）
+on:
+  issue_comment:
+    types: [created]
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  ai-code-assist:
+    if: contains(github.event.comment.body, '@claude')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: 国产AI驱动代码助手
+        uses: anthropics/claude-code-actions@v1
+        env:
+          ANTHROPIC_BASE_URL: ${{ secrets.ANTHROPIC_BASE_URL }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
+          ANTHROPIC_MODEL: astron-code-latest
+
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          API_TIMEOUT_MS: "600000"
+          CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
